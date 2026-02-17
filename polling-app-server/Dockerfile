@@ -1,34 +1,30 @@
 #### Stage 1: Build the application
-FROM openjdk:8-jdk-alpine as build
+FROM eclipse-temurin:17-jdk-slim AS build
 
-# Set the current working directory inside the image
 WORKDIR /app
 
-# Copy maven executable to the image
+# Copy Maven wrapper
 COPY mvnw .
 COPY .mvn .mvn
-
-# Copy the pom.xml file
 COPY pom.xml .
 
-# Build all the dependencies in preparation to go offline. 
-# This is a separate step so the dependencies will be cached unless 
-# the pom.xml file has changed.
+# Download dependencies (cached)
 RUN ./mvnw dependency:go-offline -B
 
-# Copy the project source
+# Copy source code
 COPY src src
 
-# Package the application
+# Build app
 RUN ./mvnw package -DskipTests
+
+# Extract dependencies for minimal image
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
-#### Stage 2: A minimal docker image with command to run the app 
-FROM openjdk:8-jre-alpine
+#### Stage 2: Minimal runtime image
+FROM eclipse-temurin:17-jre-slim
 
 ARG DEPENDENCY=/app/target/dependency
 
-# Copy project dependencies from the build stage
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
