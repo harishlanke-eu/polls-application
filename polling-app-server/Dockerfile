@@ -1,5 +1,5 @@
 #### Stage 1: Build the application
-FROM eclipse-temurin:17-jdk-slim AS build
+FROM eclipse-temurin:17-jdk AS build
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN ./mvnw package -DskipTests
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
 #### Stage 2: Minimal runtime image
-FROM eclipse-temurin:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 ARG DEPENDENCY=/app/target/dependency
 
